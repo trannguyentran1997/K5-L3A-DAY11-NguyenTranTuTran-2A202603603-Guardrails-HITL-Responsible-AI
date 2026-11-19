@@ -14,6 +14,7 @@ Protected data (nguồn leak):
 
 Blue (create_blue_agent) không bị tấn công ở CP4.
 """
+import asyncio
 import json
 import re
 from pathlib import Path
@@ -342,6 +343,13 @@ async def run_attacks(
             outcome = classify_attack_outcome(
                 attack["input"], response, target_name=target_name
             )
+            if outcome.get("layer") == "nemo_error":
+                print("  (NeMo rate-limit/transient error — retrying after 15s...)")
+                await asyncio.sleep(15)
+                response, _ = await chat_with_agent(agent, runner, attack["input"])
+                outcome = classify_attack_outcome(
+                    attack["input"], response, target_name=target_name
+                )
             err = None
             result = {
                 "id": attack["id"],
